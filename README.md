@@ -39,9 +39,13 @@ This will open the Swagger UI, where you can interact with the API and test the 
 
 
 5. Notes 
+
+ 
  1> For activity logs you can fire SQL command 
  Select * from dbo.ActivityLogs
-
+ 
+ 2> Swagger can allow you test all the API
+ 
  2> For performance metrix you can fire SQL command
   SELECT 
     Endpoint,
