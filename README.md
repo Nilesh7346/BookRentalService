@@ -1,7 +1,7 @@
 1. SQL Database Setup
 To initialize the Book Rental System database and seed it with initial data, follow these steps:
 
-Run the BookRentalSystem.sql Script for located in root folder
+Run the BookRentalSystem.sql Script for located in project Data and folder SeedScripts
 
 2. Email Configuration
 The system uses SMTP to send email notifications for rental actions (like book rentals and returns). You will need to configure the email server settings in the appsettings.json file.
