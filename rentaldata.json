@@ -1,8 +1,0 @@
-[
-  { "BookId": 1, "UserId": 1 },
-  { "BookId": 1, "UserId": 2 },
-  { "BookId": 1, "UserId": 3 },
-  { "BookId": 1, "UserId": 4 },
-  { "BookId": 1, "UserId": 5 }
-]
-
