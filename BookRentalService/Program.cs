@@ -15,11 +15,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<ValidateUserBookIdsAttribute>();
 builder.Services.AddControllers(options =>
 {
-    options.Filters.Add<ValidateUserBookIdsAttribute>(); // Apply globally
+    options.Filters.AddService<ValidateUserBookIdsAttribute>();
 });
-builder.Services.AddScoped<ActivityLogger>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -27,6 +27,7 @@ builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRentalRepository, RentalRepository>();
 builder.Services.AddScoped<IBookRentalService, BookRentalService>();
+builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddHostedService<OverdueRentalService>();
 var app = builder.Build();
@@ -37,7 +38,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseMiddleware<PerformanceLogger>();
 
 app.UseHttpsRedirection();
 

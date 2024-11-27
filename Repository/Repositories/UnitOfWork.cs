@@ -10,19 +10,23 @@ namespace Data.Repositories
         public IUserRepository Users { get; }
         public IRentalRepository Rentals { get; }
 
+        public IActivityLoggerRepository ActivityLogger { get; }
+
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
             Books = new BookRepository(context);
             Users = new UserRepository(context);
             Rentals = new RentalRepository(context);
+            ActivityLogger= new ActivityLoggerRepository(context);
+
+
         }
 
         public async Task CompleteAsync()
         {
             await _context.SaveChangesAsync();
         }
-
         public void Dispose()
         {
             _context.Dispose();

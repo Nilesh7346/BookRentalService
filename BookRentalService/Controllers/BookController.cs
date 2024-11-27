@@ -2,8 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Services;
 using API.Filter;
+using Models;
+using System.Diagnostics;
 using Services.Helpers;
-using Microsoft.IdentityModel.Tokens;
 
 
 [ApiController]
@@ -13,9 +14,12 @@ public class BookRentalController : ControllerBase
 {
     private readonly IBookRentalService _bookRentalService;
 
-    public BookRentalController(IBookRentalService bookService)
+    private readonly IActivityLogger logger;
+
+    public BookRentalController(IBookRentalService bookService, IActivityLogger _logger)
     {
         _bookRentalService = bookService;
+        logger = _logger;
     }
 
     [HttpGet("search")]
@@ -24,7 +28,10 @@ public class BookRentalController : ControllerBase
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var books = await _bookRentalService.SearchBooksAsync(title, genre);
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(books);
         }
         catch (Exception ex)
@@ -34,10 +41,12 @@ public class BookRentalController : ControllerBase
     }
 
     [HttpPost("rent")]
-    public async Task<IActionResult> RentBook(int bookId, int userId, [FromServices] ActivityLogger logger)
+    public async Task<IActionResult> RentBook(int bookId, int userId)
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             if (bookId == 0)
             {
                 return BadRequest("Valid book id is required.");
@@ -47,7 +56,8 @@ public class BookRentalController : ControllerBase
                 return BadRequest("Valid user id is required.");
             }
             await _bookRentalService.RentBookAsync(bookId, userId);
-            await logger.LogActivityAsync("Info", "Rental completed successfully for book id:" + bookId, "/api/bookrental/rent", userId);
+           // await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
+            //await logger.LogActivityAsync("Info", "Rental completed successfully for book id:" + bookId, "/api/bookrental/rent", userId);
             return Ok("Book rented successfully.");
         }
         catch (DbUpdateConcurrencyException ex)
@@ -65,17 +75,19 @@ public class BookRentalController : ControllerBase
     }
 
     [HttpGet("most-overdue-book")]
-    public async Task<IActionResult> GetMostOverdueBook([FromServices] ActivityLogger logger)
+    public async Task<IActionResult> GetMostOverdueBook()
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var result = await _bookRentalService.GetMostOverdueBookAsync();
 
             if (result == null)
             {
                 return NotFound("No overdue books found.");
             }
-
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(result);
         }
         catch (Exception ex)
@@ -86,17 +98,19 @@ public class BookRentalController : ControllerBase
     }
 
     [HttpGet("least-popular-book")]
-    public async Task<IActionResult> GetLeastPopularBook([FromServices] ActivityLogger logger)
+    public async Task<IActionResult> GetLeastPopularBook()
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var result = await _bookRentalService.GetLeastPopularBookAsync();
 
             if (result == null)
             {
                 return NotFound("No least popular books found.");
             }
-
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(result);
         }
         catch (Exception ex)
@@ -107,17 +121,19 @@ public class BookRentalController : ControllerBase
     }
 
     [HttpGet("most-popular-book")]
-    public async Task<IActionResult> GetMostPopularBook([FromServices] ActivityLogger logger)
+    public async Task<IActionResult> GetMostPopularBook()
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var result = await _bookRentalService.GetMostPopularBookAsync();
 
             if (result == null)
             {
                 return NotFound("No most popular books found.");
             }
-
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(result);
         }
         catch (Exception ex)
@@ -128,16 +144,18 @@ public class BookRentalController : ControllerBase
     }
 
     [HttpGet("history/user/{userId}")]
-    public async Task<IActionResult> GetRentalHistoryByUserId(int userId, [FromServices] ActivityLogger logger)
+    public async Task<IActionResult> GetRentalHistoryByUserId(int userId)
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var rentalHistory = await _bookRentalService.GetRentalHistoryByUserIdAsync(userId);
             if (rentalHistory == null || !rentalHistory.Any())
             {
                 return NotFound("No rental history found for the specified user.");
             }
-
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(rentalHistory);
         }
         catch (Exception ex)
@@ -149,16 +167,18 @@ public class BookRentalController : ControllerBase
 
     // Endpoint to get rental history by bookId
     [HttpGet("history/book/{bookId}")]
-    public async Task<IActionResult> GetRentalHistoryByBookId(int bookId, [FromServices] ActivityLogger logger)
+    public async Task<IActionResult> GetRentalHistoryByBookId(int bookId)
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var rentalHistory = await _bookRentalService.GetRentalHistoryByBookIdAsync(bookId);
             if (rentalHistory == null || !rentalHistory.Any())
             {
                 return NotFound("No rental history found for the specified book.");
             }
-
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             return Ok(rentalHistory);
         }
         catch (Exception ex)
@@ -170,10 +190,12 @@ public class BookRentalController : ControllerBase
 
     // Endpoint to get rental history by bookId
     [HttpPatch("return")]
-    public async Task<IActionResult> ReturnBook(int bookId, int userId, [FromServices] ActivityLogger logger)
+    public async Task<IActionResult> ReturnBook(int bookId, int userId)
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             if (bookId == 0)
             {
                 return BadRequest("Valid book id is required.");
@@ -183,6 +205,7 @@ public class BookRentalController : ControllerBase
                 return BadRequest("Valid user id is required.");
             }
             await _bookRentalService.ReturnBookAsync(bookId, userId);
+            await LogPerformanceMetrics(HttpContext.Request.Path, stopwatch, logger);
             await logger.LogActivityAsync("Info", "Return completed successfully for book id:" + bookId, "/api/bookrental/return", userId);
             return Ok("Book returned succesfully");
         }
@@ -193,4 +216,22 @@ public class BookRentalController : ControllerBase
         }
     }
 
+    // Common method to log performance metrics
+    protected async Task LogPerformanceMetrics(string endpoint, Stopwatch stopwatch, IActivityLogger logger)
+    {
+        // Log performance metrics
+        var log = new ActivityLog
+        {
+            LogType = "Performance",
+            Message = $"Endpoint {endpoint} executed.",
+            Endpoint = endpoint,
+            DurationMs = (int)stopwatch.ElapsedMilliseconds,
+            LogTime = DateTime.UtcNow
+        };
+
+        // Add the log to the database and save changes
+        await logger.AddActivityAsync(log);
+    }
 }
+
+

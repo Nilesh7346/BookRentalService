@@ -1,32 +1,41 @@
-﻿using Data;
+﻿
+using Data.Interfaces;
 using Models;
 
 namespace Services.Helpers
 {
-    public class ActivityLogger
+    public class ActivityLogger : IActivityLogger
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ActivityLogger(AppDbContext context)
+        public ActivityLogger(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
         // Log an activity
         public async Task LogActivityAsync(string logType, string message, string endpoint = null, int? userId = null, int? durationMs = null)
         {
-            var log = new ActivityLog
+            try
             {
-                LogType = logType,
-                Message = message,
-                Endpoint = endpoint,
-                UserId = userId,
-                DurationMs = durationMs,
-                LogTime = DateTime.UtcNow
-            };
+                await _unitOfWork.ActivityLogger.LogActivityAsync(logType, message, endpoint, userId, durationMs);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
-            await _context.ActivityLogs.AddAsync(log);
-            await _context.SaveChangesAsync();
+        public async Task AddActivityAsync(ActivityLog log)
+        {
+            try
+            {
+                await _unitOfWork.ActivityLogger.AddActivityAsync(log);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 

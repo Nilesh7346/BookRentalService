@@ -11,6 +11,8 @@ namespace Data.Interfaces
         IBookRepository Books { get; }
         IUserRepository Users { get; }
         IRentalRepository Rentals { get; }
+
+        IActivityLoggerRepository ActivityLogger { get; }
         Task CompleteAsync();
     }
 
