@@ -4,32 +4,28 @@ namespace BookRentalUnitTest
     using Moq;
     using Microsoft.AspNetCore.Mvc;
     using Services;
-    using Services.Helpers;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Models;
     using Data;
     using Microsoft.EntityFrameworkCore;
+    using Services.Helpers;
+    using Microsoft.AspNetCore.Http;
 
     [TestFixture]
     public class BookRentalUnitTest
     {
         private Mock<IBookRentalService> _bookRentalServiceMock;
-        private Mock<ActivityLogger> _activityLoggerMock;
+        private Mock<IActivityLogger> _activityLoggerMock;
         private BookRentalController _controller;
 
         [SetUp]
         public void SetUp()
         {
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDatabase")  // In-memory DB
-            .Options;
-            AppDbContext _appDbContext;
-            _appDbContext = new AppDbContext(options);
-
+     
             _bookRentalServiceMock = new Mock<IBookRentalService>();
-            _activityLoggerMock = new Mock<ActivityLogger>(_appDbContext);
-            _controller = new BookRentalController(_bookRentalServiceMock.Object);
+            _activityLoggerMock = new Mock<IActivityLogger>();
+            _controller = new BookRentalController(_bookRentalServiceMock.Object, _activityLoggerMock.Object);
         }
 
 
@@ -42,6 +38,15 @@ namespace BookRentalUnitTest
                                               { new BookDto { ISBN = "9780547928227", Title = "The Hobbit", Author = "J.R.R. Tolkien", Genre = "Fantasy", AvailableCopies = 4, TotalCopies = 4 } } };
             _bookRentalServiceMock.Setup(s => s.SearchBooksAsync("Title", "Genre"))
                                   .ReturnsAsync(mockBooks);
+
+            var httpContextMock = new Mock<HttpContext>();
+            var requestMock = new Mock<HttpRequest>();
+            requestMock.Setup(r => r.Path).Returns("/api/bookrental/search");
+            httpContextMock.Setup(h => h.Request).Returns(requestMock.Object);
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContextMock.Object
+            };
 
             // Act
             var result = await _controller.SearchBooks("Title", "Genre");
@@ -76,7 +81,7 @@ namespace BookRentalUnitTest
         {
             _bookRentalServiceMock.Setup(s => s.RentBookAsync(1, 101))
                       .ReturnsAsync(true);
-            var result = await _controller.RentBook(1, 101, _activityLoggerMock.Object);
+            var result = await _controller.RentBook(1, 101);
 
             // Assert
             var okResult = result as OkObjectResult;
@@ -92,7 +97,7 @@ namespace BookRentalUnitTest
                 .ThrowsAsync(new DbUpdateConcurrencyException());
 
             // Act
-            var result = await _controller.RentBook(1, 101, _activityLoggerMock.Object);
+            var result = await _controller.RentBook(1, 101);
 
             // Assert
             var conflictResult = result as ConflictObjectResult;
@@ -111,17 +116,32 @@ namespace BookRentalUnitTest
                 RentalCount = 1,
                 BookId = 1,
             };
+
             _bookRentalServiceMock.Setup(s => s.GetMostOverdueBookAsync())
                 .ReturnsAsync(overdueBook);
 
+            var loggerMock = new Mock<IActivityLogger>();
+            _controller = new BookRentalController(_bookRentalServiceMock.Object, loggerMock.Object);
+
+            // Mock HttpContext
+            var httpContextMock = new Mock<HttpContext>();
+            var requestMock = new Mock<HttpRequest>();
+            requestMock.Setup(r => r.Path).Returns("/api/bookrental/most-overdue-book");
+            httpContextMock.Setup(h => h.Request).Returns(requestMock.Object);
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContextMock.Object
+            };
+
             // Act
-            var result = await _controller.GetMostOverdueBook(_activityLoggerMock.Object);
+            var result = await _controller.GetMostOverdueBook();
 
             // Assert
             var okResult = result as OkObjectResult;
             Assert.IsNotNull(okResult);
             Assert.That(okResult.Value, Is.EqualTo(overdueBook));
         }
+
 
         [Test]
         public async Task GetMostOverdueBook_ReturnsNotFound_WhenNoBookExists()
@@ -131,7 +151,7 @@ namespace BookRentalUnitTest
                 .ReturnsAsync((BookStatisticsDto)null);
 
             // Act
-            var result = await _controller.GetMostOverdueBook(_activityLoggerMock.Object);
+            var result = await _controller.GetMostOverdueBook();
 
             // Assert
             var notFoundResult = result as NotFoundObjectResult;
@@ -154,9 +174,17 @@ namespace BookRentalUnitTest
              };
             _bookRentalServiceMock.Setup(s => s.GetRentalHistoryByUserIdAsync(101))
                 .ReturnsAsync(history);
+            var httpContextMock = new Mock<HttpContext>();
+            var requestMock = new Mock<HttpRequest>();
+            requestMock.Setup(r => r.Path).Returns("/api/bookrental/history/user");
+            httpContextMock.Setup(h => h.Request).Returns(requestMock.Object);
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContextMock.Object
+            };
 
             // Act
-            var result = await _controller.GetRentalHistoryByUserId(101, _activityLoggerMock.Object);
+            var result = await _controller.GetRentalHistoryByUserId(101);
 
             // Assert
             var okResult = result as OkObjectResult;
@@ -172,7 +200,7 @@ namespace BookRentalUnitTest
                 .ReturnsAsync(new List<RentalHistoryDto>());
 
             // Act
-            var result = await _controller.GetRentalHistoryByUserId(101, _activityLoggerMock.Object);
+            var result = await _controller.GetRentalHistoryByUserId(101);
 
             // Assert
             var notFoundResult = result as NotFoundObjectResult;
