@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Services;
 using API.Filter;
 using Services.Helpers;
+using Microsoft.IdentityModel.Tokens;
 
 
 [ApiController]
@@ -37,6 +38,14 @@ public class BookRentalController : ControllerBase
     {
         try
         {
+            if (bookId == 0)
+            {
+                return BadRequest("Valid book id is required.");
+            }
+            else if (userId == 0)
+            {
+                return BadRequest("Valid user id is required.");
+            }
             await _bookRentalService.RentBookAsync(bookId, userId);
             await logger.LogActivityAsync("Info", "Rental completed successfully for book id:" + bookId, "/api/bookrental/rent", userId);
             return Ok("Book rented successfully.");
@@ -161,10 +170,18 @@ public class BookRentalController : ControllerBase
 
     // Endpoint to get rental history by bookId
     [HttpPatch("return")]
-    public async Task<IActionResult> ReturnBookAsync(int bookId, int userId, [FromServices] ActivityLogger logger)
+    public async Task<IActionResult> ReturnBook(int bookId, int userId, [FromServices] ActivityLogger logger)
     {
         try
         {
+            if (bookId == 0)
+            {
+                return BadRequest("Valid book id is required.");
+            }
+            else if (userId == 0)
+            {
+                return BadRequest("Valid user id is required.");
+            }
             await _bookRentalService.ReturnBookAsync(bookId, userId);
             await logger.LogActivityAsync("Info", "Return completed successfully for book id:" + bookId, "/api/bookrental/return", userId);
             return Ok("Book returned succesfully");

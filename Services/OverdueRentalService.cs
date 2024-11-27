@@ -48,7 +48,7 @@ namespace Services
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 var overdueRentals = await dbContext.Rentals
-                    .Where(r => r.ReturnDate == null && !r.IsOverdue && r.RentalDate.AddMinutes(10) < DateTime.UtcNow)
+                    .Where(r => r.ReturnDate == null && !r.IsOverdue && r.RentalDate.AddDays(14) < DateTime.UtcNow)
                     .ToListAsync();
 
 
